@@ -139,3 +139,5 @@ end)
 
 - Maybe I will implement those in [Not-implemented](#Not-Implemented).
 - Currently, __user commands don't yet receive args__ like their function counterparts do. Hope one day I will implement it after reading neovim manuals. I am lazy though.
+- Learn how to write lua docs by using it in this module.
+- Less redundant code to set and load options.
