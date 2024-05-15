@@ -6,7 +6,9 @@ local M = {}
 local default_opts = {
 	pane_nowrap = true,
 	-- TODO: implement cross_win
-	cross_win = false,
+	-- NOTE: note that only when pane_nowrap is set to true, cross_win takes effects
+	cross_win = true,
+	-- TODO: implement no win_wrap
 	win_wrap = true,
 }
 
@@ -19,7 +21,7 @@ local directions = {
 
 local locations = {
 	h = "#{pane_at_left}",
-	l = "#{pane_at_rigft}",
+	l = "#{pane_at_right}",
 	j = "#{pane_at_bottom}",
 	k = "#{pane_at_top}",
 }
@@ -75,10 +77,6 @@ local function tmux_aware_navigate(direction, opts)
 		return
 	end
 
-	-- vim.notify("here", vim.log.levels.DEBUG)
-	-- TODO: deal with nowrap
-	--  { if-shell -F '#{pane_at_left}'   { previous-window } { select-pane -L } }
-	--  { if-shell -F '#{pane_at_right}'  { next-window } { select-pane -R } }
 	--  { if-shell -F '#{pane_at_bottom}' {} { select-pane -D } }
 	--  { if-shell -F '#{pane_at_top}'    {} { select-pane -U } }
 	-- bind-key -T copy-mode-vi 'C-h' if-shell -F '#{pane_at_left}'   {} { select-pane -L }
@@ -92,27 +90,42 @@ local function tmux_aware_navigate(direction, opts)
 
 	local s = {
 		"select-pane",
-		"-t",
-		vim.env["TMUX_PANE"],
+		-- "-t",
+		-- vim.env["TMUX_PANE"],
 		"-" .. directions[direction],
 	}
 
 	if opts.pane_nowrap then
+		local c = '""'
+		if opts.cross_win then
+			-- tmux if -F '#{pane_at_left}' "previous-window" "select-pane -L"
+			if direction == "h" then
+				c = '"previous-window"'
+			elseif direction == "l" then
+				c = '"next-window"'
+			end
+		end
 		vim.list_extend(cmd_list, {
 			"if",
 			"-F",
 			"'" .. locations[direction] .. "'",
-			'""',
-			'"' .. vim.fn.join(s, " ") .. '"',
+			c,
 		})
+
+		table.insert(cmd_list, '"' .. vim.fn.join(s, " ") .. '"')
 	else
 		vim.list_extend(cmd_list, s)
 	end
 
-	vim.notify(vim.inspect(cmd_list), vim.log.levels.DEBUG)
 	local cmd = vim.fn.join(cmd_list, " ")
-	vim.fn.system(cmd)
+
+	-- DEBUG
+	vim.notify("nowrap: " .. vim.inspect(opts.pane_nowrap), vim.log.levels.DEBUG)
+	vim.notify("crosswin: " .. vim.inspect(opts.cross_win), vim.log.levels.DEBUG)
+	vim.notify(vim.inspect(cmd_list), vim.log.levels.DEBUG)
 	vim.notify(cmd)
+
+	vim.fn.system(cmd)
 end
 
 M.vim_tmux_navigate_left = function()
