@@ -15,7 +15,7 @@ A __REWRITE__ [vim-tmux-navigator](https://github.com/christoomey/vim-tmux-navig
 ## Install
 
 - Use your favorite plugin manager.
-- Or simply copy the file somewhere in your neovim config as a module as it is quite small.
+- Or simply copy the single file version somewhere in your neovim config as a module as it is quite small.
 
 ## Setup
 
