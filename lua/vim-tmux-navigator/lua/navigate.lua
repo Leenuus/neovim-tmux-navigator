@@ -3,11 +3,25 @@
 -- but maybe not that useful
 local M = {}
 
+local default_opts = {
+	pane_nowrap = true,
+	-- TODO: implement cross_win
+	cross_win = false,
+	win_wrap = true,
+}
+
 local directions = {
 	h = "L",
 	j = "D",
 	k = "U",
 	l = "R",
+}
+
+local locations = {
+	h = "#{pane_at_left}",
+	l = "#{pane_at_rigft}",
+	j = "#{pane_at_bottom}",
+	k = "#{pane_at_top}",
 }
 
 --- function wrapping navigation in vim
@@ -24,19 +38,21 @@ end
 
 --- function to send tmux commands
 --- @param direction string
---- @param pane_nowrap boolean | nil default to false in tmux, true in neovim
---- @param cross_win boolean | nil default to false(in tmux), should navigate between windows
---- @param win_wrap boolean | nil default to true(both in tmux and neovim), navigation between windows should wrap
-local function tmux_aware_navigate(direction, pane_nowrap, cross_win, win_wrap)
+--- @param opts table | nil
+local function tmux_aware_navigate(direction, opts)
+	-- TODO: better default solution
 	local win = vim.fn.winnr()
-	if pane_nowrap == nil then
-		pane_nowrap = true
+	if opts == nil then
+		opts = default_opts
 	end
-	if cross_win == nil then
-		cross_win = false
+	if opts.pane_nowrap == nil then
+		opts.pane_nowrap = true
 	end
-	if win_wrap == nil then
-		win_wrap = true
+	if opts.cross_win == nil then
+		opts.cross_win = false
+	end
+	if opts.win_wrap == nil then
+		opts.win_wrap = true
 	end
 
 	local res = vim_navigate(direction)
@@ -59,23 +75,57 @@ local function tmux_aware_navigate(direction, pane_nowrap, cross_win, win_wrap)
 		return
 	end
 
+	-- vim.notify("here", vim.log.levels.DEBUG)
 	-- TODO: deal with nowrap
-	local cmd = "tmux " .. "select-pane -t " .. vim.env["TMUX_PANE"] .. " -" .. directions[direction]
-	vim.notify(cmd, vim.log.levels.DEBUG)
+	--  { if-shell -F '#{pane_at_left}'   { previous-window } { select-pane -L } }
+	--  { if-shell -F '#{pane_at_right}'  { next-window } { select-pane -R } }
+	--  { if-shell -F '#{pane_at_bottom}' {} { select-pane -D } }
+	--  { if-shell -F '#{pane_at_top}'    {} { select-pane -U } }
+	-- bind-key -T copy-mode-vi 'C-h' if-shell -F '#{pane_at_left}'   {} { select-pane -L }
+	-- bind-key -T copy-mode-vi 'C-j' if-shell -F '#{pane_at_bottom}' {} { select-pane -D }
+	-- bind-key -T copy-mode-vi 'C-k' if-shell -F '#{pane_at_top}'    {} { select-pane -U }
+	-- bind-key -T copy-mode-vi 'C-l' if-shell -F '#{pane_at_right}'  {} { select-pane -R }
+
+	local cmd_list = {
+		"tmux",
+	}
+
+	local s = {
+		"select-pane",
+		"-t",
+		vim.env["TMUX_PANE"],
+		"-" .. directions[direction],
+	}
+
+	if opts.pane_nowrap then
+		vim.list_extend(cmd_list, {
+			"if",
+			"-F",
+			"'" .. locations[direction] .. "'",
+			'""',
+			'"' .. vim.fn.join(s, " ") .. '"',
+		})
+	else
+		vim.list_extend(cmd_list, s)
+	end
+
+	vim.notify(vim.inspect(cmd_list), vim.log.levels.DEBUG)
+	local cmd = vim.fn.join(cmd_list, " ")
 	vim.fn.system(cmd)
+	vim.notify(cmd)
 end
 
 M.vim_tmux_navigate_left = function()
-	tmux_aware_navigate("h", true)
+	tmux_aware_navigate("h")
 end
 M.vim_tmux_navigate_right = function()
-	tmux_aware_navigate("l", true)
+	tmux_aware_navigate("l")
 end
 M.vim_tmux_navigate_up = function()
-	tmux_aware_navigate("k", true)
+	tmux_aware_navigate("k")
 end
 M.vim_tmux_navigate_down = function()
-	tmux_aware_navigate("j", true)
+	tmux_aware_navigate("j")
 end
 
 return M
