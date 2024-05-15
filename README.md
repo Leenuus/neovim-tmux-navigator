@@ -125,7 +125,7 @@ local nt = require('neovim-tmux-navigator')
 
 vim.keymap.set('n', 'keybinding you like', function()
   -- NOTE: you can pass a option with two fields below or nil
-  -- if nil, use opts passed when calling setup(), or the defalt
+  -- if nil, use opts passed when calling setup(), or the default
   nt.nvim_tmux_navigate_left({
     pane_nowrap = true,
     cross_win = false,
@@ -137,5 +137,5 @@ end)
 
 ## TODO
 
-- maybe I will implement those in [Not-implemented](#Not-Implemented)
+- Maybe I will implement those in [Not-implemented](#Not-Implemented).
 - Currently, __user commands don't yet receive args__ like their function counterparts do. Hope one day I will implement it after reading neovim manuals. I am lazy though.
