@@ -42,7 +42,7 @@ require("neovim-tmux-navigator").setup({
 
 #### Wrapping(Default)
 
-```tmux.conf
+```tmux
 is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
     | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|l?n?vim?x?|fzf)(diff)?$'"
 
@@ -61,7 +61,7 @@ bind C-l send-keys 'C-l'
 
 #### Only Nowrap
 
-```tmux.conf
+```tmux
 is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
     | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|l?n?vim?x?|fzf)(diff)?$'"
 
@@ -81,7 +81,7 @@ bind C-l send-keys 'C-l'
 
 #### Nowrap and Cross_win
 
-```tmux.conf
+```tmux
 is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
     | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|l?n?vim?x?|fzf)(diff)?$'"
 
@@ -98,6 +98,33 @@ bind-key -T copy-mode-vi 'C-l' if-shell -F '#{pane_at_right}'  { next-window } {
 # bonus, leader <C-L> to clear your shell's screen
 bind C-l send-keys 'C-l'
 ```
+
+#### More Bonus
+
+If you are using applications like `nnn`, a terminal file manager, which makes use of tmux's split pane for previewing. It doesn't make sense most of times to navigate into that split pane. Here is a workaround.
+
+```tmux
+bind-key -n 'C-h' if-shell "$is_vim" { send-keys C-h } { 
+	if-shell -F '#{pane_at_left}'   { previous-window }  { if-shell '[[ #W =~ nnn ]]' { previous-window } { select-pane -L }}}
+bind-key -n 'C-l' if-shell "$is_vim" { send-keys C-l } { 
+	if-shell -F '#{pane_at_right}'   { next-window }  { if-shell '[[ #W =~ nnn ]]' { next-window } { select-pane -R }}}
+
+bind-key -T copy-mode-vi 'C-h' if-shell -F '#{pane_at_left}'   { previous-window }  { if-shell '[[ #W =~ nnn ]]' { previous-window } { select-pane -L }}
+bind-key -T copy-mode-vi 'C-l' if-shell -F '#{pane_at_right}'   { next-window }  { if-shell '[[ #W =~ nnn ]]' { next-window } { select-pane -R }}
+```
+
+We check whether `#W`, expanding to current window's name in tmux matches a POSIX compliant regex pattern, for me, `nnn`. By default, tmux automatically renames window to application running inside, if it doesn't work, just write a wrapper script to rename that application to what it should be like so:
+
+```bash
+if [ "$TMUX" ];then
+  tmux rename-window nnn
+end
+exec nnn "$@"
+```
+
+If we are in such window, `C-H` and `C-L` won't takes us to adjacent pane, but to previous/next window, which makes more sense.
+
+Note that we don't need a neovim counterpart here, when we switching window, tmux put us back to last visited pane in that window. As we never visit the split pane created by `preview-tui`, so we won't get into it back from neovim.
 
 ## Usage
 
