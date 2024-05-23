@@ -1,6 +1,8 @@
 -- TODO: better docs
 local M = {}
 
+vim.g.tmux_navigater_enabled = true
+
 local default_nav_opts = {
 	pane_nowrap = false,
 	-- NOTE: note that only when pane_nowrap is set to true, cross_win takes effects
@@ -46,6 +48,7 @@ local function tmux_aware_navigate(direction, navi_opts)
 	-- NOTE: after calling navigate, we are still in the same window
 	-- meaning that we should turn to tmux now
 	local should_go_tmux = vim_navigate(direction)
+	should_go_tmux = should_go_tmux and vim.g.tmux_navigater_enabled
 
 	if not should_go_tmux then
 		return
@@ -128,6 +131,15 @@ M.setup = function(opts)
 	vim.api.nvim_create_user_command("NTmuxRight", M.nvim_tmux_navigate_right, {})
 	vim.api.nvim_create_user_command("NTmuxUp", M.nvim_tmux_navigate_up, {})
 	vim.api.nvim_create_user_command("NTmuxDown", M.nvim_tmux_navigate_down, {})
+	vim.api.nvim_create_user_command("NTmuxToggle", function()
+		vim.g.tmux_navigater_enabled = not vim.g.tmux_navigater_enabled
+	end, {})
+	vim.api.nvim_create_user_command("NTmuxDisable", function()
+		vim.g.tmux_navigater_enabled = false
+	end, {})
+	vim.api.nvim_create_user_command("NTmuxEnable", function()
+		vim.g.tmux_navigater_enabled = true
+	end, {})
 
 	if opts.use_default_keymap then
 		vim.keymap.set("n", "<c-h>", M.nvim_tmux_navigate_left)
