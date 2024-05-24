@@ -2,12 +2,8 @@
 local M = {}
 
 vim.g.tmux_navigater_enabled = true
-
-local default_nav_opts = {
-	pane_nowrap = false,
-	-- NOTE: note that only when pane_nowrap is set to true, cross_win takes effects
-	cross_win = false,
-}
+vim.g.tmux_navigator_pane_nowrap = false
+vim.g.tmux_navigater_cross_win = false
 
 local vim_to_tmux_directions = {
 	h = "L",
@@ -37,13 +33,11 @@ end
 --- @param direction string
 --- @param navi_opts table | nil
 local function tmux_aware_navigate(direction, navi_opts)
-	navi_opts = navi_opts or default_nav_opts
-	if navi_opts.pane_nowrap == nil then
-		navi_opts.pane_nowrap = false
-	end
-	if navi_opts.cross_win == nil then
-		navi_opts.cross_win = false
-	end
+	navi_opts = navi_opts
+	    or {
+		    pane_nowrap = vim.g.tmux_navigator_pane_nowrap,
+		    cross_win = vim.g.tmux_navigater_cross_win,
+	    }
 
 	-- NOTE: after calling navigate, we are still in the same window
 	-- meaning that we should turn to tmux now
@@ -111,20 +105,12 @@ end
 
 local default_opts = {
 	use_default_keymap = true,
-	cross_win = false,
-	pane_nowrap = false,
 }
 
 ---setup neovim-tmux-navigator
 ---@param opts table | nil
 M.setup = function(opts)
 	opts = opts or default_opts
-	if opts.pane_nowrap ~= nil and type(opts.pane_nowrap) == "boolean" then
-		default_nav_opts.pane_nowrap = opts.pane_nowrap
-	end
-	if opts.cross_win ~= nil and type(opts.cross_win) == "boolean" then
-		default_nav_opts.cross_win = opts.cross_win
-	end
 
 	-- TODO: navigate command can receive args
 	vim.api.nvim_create_user_command("NTmuxLeft", M.nvim_tmux_navigate_left, {})
