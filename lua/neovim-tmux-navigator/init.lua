@@ -29,6 +29,10 @@ local function vim_navigate(direction)
 	end
 end
 
+local function tmux_is_zoom()
+	return vim.fn.system("tmux display -pF '#{window_zoomed_flag}'") == "1\n"
+end
+
 --- function to send tmux command
 --- @param direction string
 --- @param navi_opts table | nil
@@ -42,7 +46,7 @@ local function tmux_aware_navigate(direction, navi_opts)
 	-- NOTE: after calling navigate, we are still in the same window
 	-- meaning that we should turn to tmux now
 	local should_go_tmux = vim_navigate(direction)
-	should_go_tmux = should_go_tmux and vim.g.tmux_navigater_enabled
+	should_go_tmux = should_go_tmux and vim.g.tmux_navigater_enabled and not tmux_is_zoom()
 
 	if not should_go_tmux then
 		return

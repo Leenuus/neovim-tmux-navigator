@@ -6,10 +6,10 @@ A __REWRITE__ [vim-tmux-navigator](https://github.com/christoomey/vim-tmux-navig
 
 - Pure lua, minimal simple file module, no more than 140 lines.
 - If you disable `wrapping` in panes, then you can enable `cross_win`, which allows you to go to previous window with the same keybinding you have to navigate around panes. That is, when you are at leftmost neovim window in the leftmost tmux pane, pressing `<C-h>`, the default keybinding to go left, you __go to previous window.__
+- `zoom` support in tmux, I tried this feature today; it would be better if I meet it early, so I didn't have to create a bunch of tmux window for doing things.
 
 ## Not-Implemented
 
-- `zoom` support in tmux, I never use this tmux features before; It doesn't make sense to me.
 - `previous` commands support. In tmux and neovim, one can go to previous visited pane or window. In tmux, it is `last-window`; in neovim, it is `:wincmd p`. But I never use these two commands, so I just remove that.
 
 ## Install
@@ -33,7 +33,7 @@ require("neovim-tmux-navigator").setup({
   pane_nowrap = true,
   -- NOTE:
   -- default to false, as it is default behavior of tmux and neovim
-  -- only works when pane_nowrap is set to true
+  -- only works when pane_nowrap is set to true and tmux window is not zoomed
   cross_win = true,
 })
 ```
