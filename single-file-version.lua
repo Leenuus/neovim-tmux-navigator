@@ -1,8 +1,6 @@
-local default_nav_opts = {
-	pane_nowrap = false,
-	-- NOTE: note that only when pane_nowrap is set to true, cross_win takes effects
-	cross_win = false,
-}
+vim.g.tmux_navigater_enabled = true
+vim.g.tmux_navigator_pane_nowrap = false
+vim.g.tmux_navigater_cross_win = false
 
 local vim_to_tmux_directions = {
 	h = "L",
@@ -28,21 +26,24 @@ local function vim_navigate(direction)
 	end
 end
 
+local function tmux_is_zoom()
+	return vim.fn.system("tmux display -pF '#{window_zoomed_flag}'") == "1\n"
+end
+
 --- function to send tmux command
 --- @param direction string
 --- @param navi_opts table | nil
 local function tmux_aware_navigate(direction, navi_opts)
-	navi_opts = navi_opts or default_nav_opts
-	if navi_opts.pane_nowrap == nil then
-		navi_opts.pane_nowrap = false
-	end
-	if navi_opts.cross_win == nil then
-		navi_opts.cross_win = false
-	end
+	navi_opts = navi_opts
+	    or {
+		    pane_nowrap = vim.g.tmux_navigator_pane_nowrap,
+		    cross_win = vim.g.tmux_navigater_cross_win,
+	    }
 
 	-- NOTE: after calling navigate, we are still in the same window
 	-- meaning that we should turn to tmux now
 	local should_go_tmux = vim_navigate(direction)
+	should_go_tmux = should_go_tmux and vim.g.tmux_navigater_enabled and not tmux_is_zoom()
 
 	if not should_go_tmux then
 		return
@@ -103,10 +104,24 @@ local function nvim_tmux_navigate_down(opts)
 	tmux_aware_navigate("j", opts)
 end
 
+local default_opts = {
+	use_default_keymap = true,
+}
+
+-- TODO: navigate command can receive args
 vim.api.nvim_create_user_command("NTmuxLeft", nvim_tmux_navigate_left, {})
 vim.api.nvim_create_user_command("NTmuxRight", nvim_tmux_navigate_right, {})
 vim.api.nvim_create_user_command("NTmuxUp", nvim_tmux_navigate_up, {})
 vim.api.nvim_create_user_command("NTmuxDown", nvim_tmux_navigate_down, {})
+vim.api.nvim_create_user_command("NTmuxToggle", function()
+	vim.g.tmux_navigater_enabled = not vim.g.tmux_navigater_enabled
+end, {})
+vim.api.nvim_create_user_command("NTmuxDisable", function()
+	vim.g.tmux_navigater_enabled = false
+end, {})
+vim.api.nvim_create_user_command("NTmuxEnable", function()
+	vim.g.tmux_navigater_enabled = true
+end, {})
 
 vim.keymap.set("n", "<c-h>", nvim_tmux_navigate_left)
 vim.keymap.set("n", "<c-l>", nvim_tmux_navigate_right)
