@@ -1,6 +1,6 @@
--- TODO: better docs
 local M = {}
 
+-- NOTE: set default
 vim.g.tmux_navigater_enabled = true
 vim.g.tmux_navigator_pane_nowrap = false
 vim.g.tmux_navigater_cross_win = false
@@ -19,7 +19,7 @@ local locations = {
 	k = "#{pane_at_top}",
 }
 
---- function wrapping navigation in vim
+--- go around between vim windows, and tell caller whether we move successfully
 --- @param direction string
 local function vim_navigate(direction)
 	local win = vim.fn.winnr()
@@ -29,11 +29,12 @@ local function vim_navigate(direction)
 	end
 end
 
+--- tell whether current tmux window is zoomed in
 local function tmux_is_zoom()
 	return vim.fn.system("tmux display -pF '#{window_zoomed_flag}'") == "1\n"
 end
 
---- function to send tmux command
+--- tmux or not tmux? It is a problem.
 --- @param direction string
 --- @param navi_opts table | nil
 local function tmux_aware_navigate(direction, navi_opts)
@@ -111,25 +112,49 @@ local default_opts = {
 	use_default_keymap = true,
 }
 
+local function toggler(var_name, cmd_prefix, buffer)
+	local scope = buffer and "b" or "g"
+	local funcs = {
+		toggle = function()
+			vim[scope][var_name] = not vim[scope][var_name]
+		end,
+		disable = function()
+			vim[scope][var_name] = false
+		end,
+		enable = function()
+			vim[scope][var_name] = true
+		end,
+	}
+	vim.api.nvim_create_user_command(cmd_prefix .. "Disable", funcs.disable, {})
+	vim.api.nvim_create_user_command(cmd_prefix .. "Enable", funcs.enable, {})
+	vim.api.nvim_create_user_command(cmd_prefix .. "Toggle", funcs.toggle, {})
+	return funcs
+end
+
 ---setup neovim-tmux-navigator
 ---@param opts table | nil
 M.setup = function(opts)
 	opts = opts or default_opts
 
-	-- TODO: navigate command can receive args
 	vim.api.nvim_create_user_command("NTmuxLeft", M.nvim_tmux_navigate_left, {})
 	vim.api.nvim_create_user_command("NTmuxRight", M.nvim_tmux_navigate_right, {})
 	vim.api.nvim_create_user_command("NTmuxUp", M.nvim_tmux_navigate_up, {})
 	vim.api.nvim_create_user_command("NTmuxDown", M.nvim_tmux_navigate_down, {})
-	vim.api.nvim_create_user_command("NTmuxToggle", function()
-		vim.g.tmux_navigater_enabled = not vim.g.tmux_navigater_enabled
-	end, {})
-	vim.api.nvim_create_user_command("NTmuxDisable", function()
-		vim.g.tmux_navigater_enabled = false
-	end, {})
-	vim.api.nvim_create_user_command("NTmuxEnable", function()
-		vim.g.tmux_navigater_enabled = true
-	end, {})
+
+	local plugin_funcs = toggler("tmux_navigater_enabled", "NTmux")
+	M.enable = plugin_funcs.enable
+	M.toggle = plugin_funcs.toggle
+	M.disable = plugin_funcs.disable
+
+	local pane_funcs = toggler("tmux_navigator_pane_nowrap", "NTPaneNoWrap")
+	M.nowrap_enable = pane_funcs.enable
+	M.nowrap_toggle = pane_funcs.toggle
+	M.nowrap_disable = pane_funcs.disable
+
+	local cross_win_funcs = toggler("tmux_navigater_cross_win", "NTCrossWin")
+	M.cross_win_enable = cross_win_funcs.enable
+	M.cross_win_toggle = cross_win_funcs.toggle
+	M.cross_win_disable = cross_win_funcs.disable
 
 	if opts.use_default_keymap then
 		vim.keymap.set("n", "<c-h>", M.nvim_tmux_navigate_left)
